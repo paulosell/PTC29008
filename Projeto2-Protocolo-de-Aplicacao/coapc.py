@@ -4,12 +4,17 @@ import response
 import random
 
 class coap(poller.Callback):
+    ACK_TIMEOUT             = 2
+    ACK_RANDOM_FACTOR       = 1.5
+    MAX_RETRANSMIT          = 4
     version                 = 1
     CON                     = 0
     NON                     = 1
     ACK                     = 2
     tokenLength             = 1
+    codeVALID               = 67
     codeCONTENT             = 69
+    codeCREATED             = 65
     codeGET                 = 1
     codePOST                = 2
     codePUT                 = 3
@@ -23,6 +28,7 @@ class coap(poller.Callback):
     
 
     def __init__(self, ip):
+        self.retransmitions = 0
         self.p = poller.Poller()
         self.ip = ip
         self.coapRequest = bytearray()
@@ -32,21 +38,36 @@ class coap(poller.Callback):
         self.fd = self.sock
         self.enable()
         self.disable_timeout()
-        self.base_timeout = 10
-        self.timeout = 10
+        self.base_timeout = random.uniform(coap.ACK_TIMEOUT,coap.ACK*coap.ACK_RANDOM_FACTOR)
+        self.timeout = random.uniform(coap.ACK_TIMEOUT,coap.ACK*coap.ACK_RANDOM_FACTOR)
         self.state = coap.idle
         
-        
+    
+    def _changeTimeoutValue(self, timeout):
+        ''' Altera o valor do timeout do objeto
+            timeout: novo valor do timeout
+        '''
+        self.base_timeout = timeout
+
+    def _reloadAndEnableTimeout(self):
+        self.reload_timeout()
+        self.enable_timeout()
+
     def handle_fsm(self, frame):
         if(self.state == coap.idle):
             self.sock.sendto(self.coapRequest, self.servidor)
             self.state = coap.wait
+            self.enable_timeout()
         elif (self.state == coap.wait):
             if(((frame[0] >> 4) == 6) and frame[1] == 0): 
                 self.state = coap.wait2
+                self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                self.reload_timeout()                 
+                self.retransmitions = 0                
             else:
                 if ((frame[0] >> 4) != 4):
-                    if(frame[1] == coap.codeCONTENT):
+                    if(frame[1] == coap.codeCONTENT or frame[1] == coap.codeCREATED 
+                    or frame[1] == coap.codeVALID):
                         type = (frame[0] & 48) >> 4                        
                         tkllen = frame[0] & 0x0F
                         code = frame[1]
@@ -54,11 +75,16 @@ class coap(poller.Callback):
                         token = frame[4:(4+tkllen)]
                         payload = frame[5+tkllen:]
                         self.response = response.Response(type, tkllen, code, mid, token, payload)                        
+                        self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                        self.reload_timeout()
+                        self.disable_timeout() 
+                        self.retransmitions = 0
                         self.disable()
                         
                         
                 elif((frame[0] >> 4) == 4):
-                    if(frame[1] == coap.codeCONTENT):                        
+                    if(frame[1] == coap.codeCONTENT or frame[1] == coap.codeCREATED
+                    or frame[1] == coap.codeVALID):                        
                         type = (frame[0] & 48) >> 4    
                         tkllen = frame[0] & 0x0F
                         code = frame[1]
@@ -67,12 +93,17 @@ class coap(poller.Callback):
                         payload = frame[5+tkllen:]
                         self.response = response.Response(type, tkllen, code, mid, token, payload) 
                         self.sendACK(frame[2], frame[3])                        
+                        self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                        self.reload_timeout()
+                        self.disable_timeout() 
+                        self.retransmitions = 0                    
                         self.disable()     
                            
                             
         elif (self.state == coap.wait2):         
             if ((frame[0] >> 4) != 4):
-                if(frame[1] == coap.codeCONTENT):
+                if(frame[1] == coap.codeCONTENT or frame[1] == coap.codeCREATED
+                or frame[1] == coap.codeVALID):
                     type = (frame[0] & 48) >> 4 
                     tkllen = frame[0] & 0x0F
                     code = frame[1]
@@ -80,11 +111,16 @@ class coap(poller.Callback):
                     token = frame[4:(4+tkllen)]
                     payload = frame[5+tkllen:]
                     self.response = response.Response(type, tkllen, code, mid, token, payload)                        
+                    self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                    self.reload_timeout()
+                    self.disable_timeout()  
+                    self.retransmitions = 0                 
                     self.disable()
                     
                         
             elif((frame[0] >> 4) == 4):
-                if(frame[1] == coap.codeCONTENT):                        
+                if(frame[1] == coap.codeCONTENT or frame[1] == coap.codeCREATED
+                or frame[1] == coap.codeVALID):                        
                     type = (frame[0] & 48) >> 4 
                     tkllen = frame[0] & 0x0F
                     code = frame[1]
@@ -92,7 +128,11 @@ class coap(poller.Callback):
                     token = frame[4:(4+tkllen)]
                     payload = frame[5+tkllen:]
                     self.response = response.Response(type, tkllen, code, mid, token, payload) 
-                    self.sendACK(frame[2], frame[3])                        
+                    self.sendACK(frame[2], frame[3])  
+                    self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                    self.reload_timeout()
+                    self.disable_timeout()  
+                    self.retransmitions = 0                    
                     self.disable()     
                       
 
@@ -109,7 +149,22 @@ class coap(poller.Callback):
         
 
     def handle_timeout(self):
-        pass
+        print(self.retransmitions)
+        print(self.timeout)
+        if(self.retransmitions < coap.MAX_RETRANSMIT-2):
+            self.sock.sendto(self.coapRequest, self.servidor)
+            self._changeTimeoutValue(self.base_timeout*2)
+            self.retransmitions = self.retransmitions + 1
+            self.reload_timeout()
+            self.enable_timeout()
+        else:
+            self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+            self.reload_timeout()
+            self.disable_timeout()
+            self.response = response.Response(0, 0, 0, 0, 0, -1)
+            self.state = coap.idle
+            self.retransmitions = 0
+            self.disable()
     
     def do_get(self, type, *uris):            
             firstByteID = random.randint(0,255)
@@ -159,7 +214,8 @@ class coap(poller.Callback):
             self.coapRequest.append(0x11)
             self.coapRequest.append(0x2a)    
             self.coapRequest.append(coap.end)
-            self.coapRequest.append(0x10)
+            for i in range (len(payload)):
+                self.coapRequest.append(payload[i])
             print(self.coapRequest)        
             self.handle_fsm(self.coapRequest) 
             self.p.adiciona(self)

@@ -1,5 +1,7 @@
 
 class Response():
+
+
     def __init__(self, type, tkllen, code, mid, token, payload):
         self.type = type
         self.tkllen = tkllen
