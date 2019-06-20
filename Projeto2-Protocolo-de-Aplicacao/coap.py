@@ -40,8 +40,8 @@ class CoAPP(Callback):
         print("Payload >>>",payload)
         r = coap("::1").do_post(coap.CON, payload ,'ptc')
         print(r.getPayload())
-        if (r.getPayload() == -1):
-            print("error")
+        if (r.getPayload() == -1 or r.getPayload() == -2):
+            print("error", r.getPayload())
             self.disable_timeout()
             self.disable()
             return False
@@ -57,12 +57,12 @@ class CoAPP(Callback):
         payload = data
         r = coap("::1").do_post(coap.CON, payload ,'ptc')
         print(r.getPayload())
-        if (r.getPayload() == -1):
-            print("error")
+        if (r.getPayload() == -1 or r.getPayload() == -2):
+            print("error", r.getPayload())
             self.disable_timeout()
             self.disable()
             return False
-        msg.ParseFromString(r.payload)
+        msg.ParseFromString(r.getPayload())
         self.base_timeout = int(msg.config.periodo/1000)
         return True
 
@@ -82,8 +82,8 @@ class CoAPP(Callback):
         payload = msg.SerializeToString()
         print("Payload >>>",payload)
         r = coap("::1").do_post(coap.CON, payload ,'ptc')
-        if (r.getPayload() == -1):
-            print("error")
+        if (r.getPayload() == -1 or r.getPayload() == -2):
+            print("error", r.getPayload())
             self.disable_timeout()
             self.disable()
             return False
@@ -92,11 +92,9 @@ class CoAPP(Callback):
         self.p.adiciona(self)
         self.p.despache()
         return False
-        
 
-        
 
 a = CoAPP()
 if (a.configura('placa2',10,'sensor A', 'sensor B')):
-    while(a.start()):
-        pass
+    a.start()
+        

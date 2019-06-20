@@ -4,27 +4,29 @@ import response
 import random
 
 class coap(poller.Callback):
-    ACK_TIMEOUT             = 2
-    ACK_RANDOM_FACTOR       = 1.5
-    MAX_RETRANSMIT          = 4
-    version                 = 1
-    CON                     = 0
-    NON                     = 1
-    ACK                     = 2
-    tokenLength             = 1
-    codeVALID               = 67
-    codeCONTENT             = 69
-    codeCREATED             = 65
-    codeGET                 = 1
-    codePOST                = 2
-    codePUT                 = 3
-    codeDELETE              = 4
-    optionContenFormat      = 192  # (0xC0) 
-    optionURIPATH           = 176  # (0xB0)
-    end                     = 255  # (0xFF)
-    idle                    = 0
-    wait                    = 1
-    wait2                   = 2
+    ACK_TIMEOUT              = 2
+    ACK_RANDOM_FACTOR        = 1.5
+    MAX_RETRANSMIT           = 4
+    version                  = 1
+    CON                      = 0
+    NON                      = 1
+    ACK                      = 2
+    tokenLength              = 1
+    codeEMPTY                = 0
+    codeVALID                = 67
+    codeINTERTALERROR        = 160
+    codeCONTENT              = 69
+    codeCREATED              = 65
+    codeGET                  = 1
+    codePOST                 = 2
+    codePUT                  = 3
+    codeDELETE               = 4
+    octet_stream             = 42
+    optionURIPATH            = 176  # (0xB0)
+    end                      = 255  # (0xFF)
+    idle                     = 0
+    wait                     = 1
+    wait2                    = 2
     
 
     def __init__(self, ip):
@@ -38,8 +40,8 @@ class coap(poller.Callback):
         self.fd = self.sock
         self.enable()
         self.disable_timeout()
-        self.base_timeout = random.uniform(coap.ACK_TIMEOUT,coap.ACK*coap.ACK_RANDOM_FACTOR)
-        self.timeout = random.uniform(coap.ACK_TIMEOUT,coap.ACK*coap.ACK_RANDOM_FACTOR)
+        self.base_timeout = random.uniform(coap.ACK_TIMEOUT,coap.ACK_TIMEOUT*coap.ACK_RANDOM_FACTOR)
+        self.timeout = random.uniform(coap.ACK_TIMEOUT,coap.ACK_TIMEOUT*coap.ACK_RANDOM_FACTOR)
         self.state = coap.idle
         
     
@@ -80,6 +82,19 @@ class coap(poller.Callback):
                         self.disable_timeout() 
                         self.retransmitions = 0
                         self.disable()
+                    elif(frame[1] == coap.codeINTERTALERROR):
+                        type = (frame[0] & 48) >> 4                        
+                        tkllen = frame[0] & 0x0F
+                        code = frame[1]
+                        mid = frame[2:4]
+                        token = frame[4:(4+tkllen)]
+                        payload = -2
+                        self.response = response.Response(type, tkllen, code, mid, token, payload)                        
+                        self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                        self.reload_timeout()
+                        self.disable_timeout() 
+                        self.retransmitions = 0
+                        self.disable()
                         
                         
                 elif((frame[0] >> 4) == 4):
@@ -97,6 +112,19 @@ class coap(poller.Callback):
                         self.reload_timeout()
                         self.disable_timeout() 
                         self.retransmitions = 0                    
+                        self.disable()
+                    elif(frame[1] == coap.codeINTERTALERROR):
+                        type = (frame[0] & 48) >> 4                        
+                        tkllen = frame[0] & 0x0F
+                        code = frame[1]
+                        mid = frame[2:4]
+                        token = frame[4:(4+tkllen)]
+                        payload = -2
+                        self.response = response.Response(type, tkllen, code, mid, token, payload)                        
+                        self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                        self.reload_timeout()
+                        self.disable_timeout() 
+                        self.retransmitions = 0
                         self.disable()     
                            
                             
@@ -116,7 +144,19 @@ class coap(poller.Callback):
                     self.disable_timeout()  
                     self.retransmitions = 0                 
                     self.disable()
-                    
+                elif(frame[1] == coap.codeINTERTALERROR):
+                    type = (frame[0] & 48) >> 4                        
+                    tkllen = frame[0] & 0x0F
+                    code = frame[1]
+                    mid = frame[2:4]
+                    token = frame[4:(4+tkllen)]
+                    payload = -2
+                    self.response = response.Response(type, tkllen, code, mid, token, payload)                        
+                    self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                    self.reload_timeout()
+                    self.disable_timeout() 
+                    self.retransmitions = 0
+                    self.disable()
                         
             elif((frame[0] >> 4) == 4):
                 if(frame[1] == coap.codeCONTENT or frame[1] == coap.codeCREATED
@@ -133,13 +173,26 @@ class coap(poller.Callback):
                     self.reload_timeout()
                     self.disable_timeout()  
                     self.retransmitions = 0                    
-                    self.disable()     
+                    self.disable() 
+                elif(frame[1] == coap.codeINTERTALERROR):
+                    type = (frame[0] & 48) >> 4                        
+                    tkllen = frame[0] & 0x0F
+                    code = frame[1]
+                    mid = frame[2:4]
+                    token = frame[4:(4+tkllen)]
+                    payload = -2
+                    self.response = response.Response(type, tkllen, code, mid, token, payload)                        
+                    self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
+                    self.reload_timeout()
+                    self.disable_timeout() 
+                    self.retransmitions = 0
+                    self.disable()    
                       
 
     def sendACK(self, id1, id2):
         toBeSent = bytearray()
-        toBeSent.append(0x60)
-        toBeSent.append(0x00)
+        toBeSent.append((coap.version << 6) | (coap.ACK << 4))
+        toBeSent.append(coap.codeEMPTY)
         toBeSent.append(id1)
         toBeSent.append(id2)
         self.sock.sendto(toBeSent,self.servidor)
@@ -149,14 +202,14 @@ class coap(poller.Callback):
         
 
     def handle_timeout(self):
-        print(self.retransmitions)
-        print(self.timeout)
-        if(self.retransmitions < coap.MAX_RETRANSMIT-2):
+        if(self.retransmitions < coap.MAX_RETRANSMIT-1):
             self.sock.sendto(self.coapRequest, self.servidor)
             self._changeTimeoutValue(self.base_timeout*2)
             self.retransmitions = self.retransmitions + 1
             self.reload_timeout()
             self.enable_timeout()
+            print(self.retransmitions)
+            print(self.timeout)
         else:
             self._changeTimeoutValue(random.uniform(coap.ACK_TIMEOUT, coap.ACK_TIMEOUT * coap.ACK_RANDOM_FACTOR))
             self.reload_timeout()
@@ -167,65 +220,63 @@ class coap(poller.Callback):
             self.disable()
     
     def do_get(self, type, *uris):            
-            firstByteID = random.randint(0,255)
-            secondByteID = random.randint(0,255)
-            token = random.randint(0,255)
-            firstByteofFrame = (coap.version << 6) | (type << 4) | (coap.tokenLength << 0)
-            self.coapRequest.append(firstByteofFrame)
-            self.coapRequest.append(coap.codeGET)
-            self.coapRequest.append(firstByteID)
-            self.coapRequest.append(secondByteID)
-            self.coapRequest.append(token)
-            for i in range (len(uris)):
-                if (i == 0):
-                    self.coapRequest.append((coap.optionURIPATH) | (len(uris[i]) << 0))
-                else:
-                    self.coapRequest.append(0 | (len(uris[i]) << 0))
-                for j in range (len(uris[i])):
-                    self.coapRequest.append(ord(uris[i][j]))      
-            self.coapRequest.append(coap.end)
-            print(self.coapRequest)        
-            self.handle_fsm(self.coapRequest) 
-            self.p.adiciona(self)
-            self.p.despache()    
-            return self.response
+        firstByteID = random.randint(0,255)
+        secondByteID = random.randint(0,255)
+        token = random.randint(0,255)
+        firstByteofFrame = (coap.version << 6) | (type << 4) | (coap.tokenLength << 0)
+        self.coapRequest.append(firstByteofFrame)
+        self.coapRequest.append(coap.codeGET)
+        self.coapRequest.append(firstByteID)
+        self.coapRequest.append(secondByteID)
+        self.coapRequest.append(token)
+        for i in range (len(uris)):
+            if (i == 0):
+                self.coapRequest.append((coap.optionURIPATH) | (len(uris[i]) << 0))
+            else:
+                self.coapRequest.append(0 | (len(uris[i]) << 0))
+            for j in range (len(uris[i])):
+                self.coapRequest.append(ord(uris[i][j]))      
+        self.coapRequest.append(coap.end)
+        print(self.coapRequest)        
+        self.handle_fsm(self.coapRequest) 
+        self.p.adiciona(self)
+        self.p.despache()    
+        return self.response
 
-            
-        
 
-    def do_post(self, type, payload = None, *uris):
-            firstByteID = random.randint(0,255)
-            secondByteID = random.randint(0,255)
-            token = random.randint(0,255)
-            firstByteofFrame = (coap.version << 6) | (type << 4) | (coap.tokenLength << 0)
-            self.coapRequest.append(firstByteofFrame)
-            self.coapRequest.append(coap.codePOST)
-            self.coapRequest.append(firstByteID)
-            self.coapRequest.append(secondByteID)
-            self.coapRequest.append(token)
-            
-            for i in range (len(uris)):
-                if (i == 0):
-                    self.coapRequest.append((coap.optionURIPATH) | (len(uris[i]) << 0))
-                else:
-                    self.coapRequest.append(0 | (len(uris[i]) << 0))
-                for j in range (len(uris[i])):
-                    self.coapRequest.append(ord(uris[i][j]))  
-            self.coapRequest.append(0x11)
-            self.coapRequest.append(0x2a)    
-            self.coapRequest.append(coap.end)
-            for i in range (len(payload)):
-                self.coapRequest.append(payload[i])
-            print(self.coapRequest)        
-            self.handle_fsm(self.coapRequest) 
-            self.p.adiciona(self)
-            self.p.despache()    
-            return self.response
+    def do_post(self, type, payload, *uris):
+        firstByteID = random.randint(0,255)
+        secondByteID = random.randint(0,255)
+        token = random.randint(0,255)
+        firstByteofFrame = (coap.version << 6) | (type << 4) | (coap.tokenLength << 0)
+        self.coapRequest.append(firstByteofFrame)
+        self.coapRequest.append(coap.codePOST)
+        self.coapRequest.append(firstByteID)
+        self.coapRequest.append(secondByteID)
+        self.coapRequest.append(token)            
+        for i in range (len(uris)):
+            if (i == 0):
+                self.coapRequest.append((coap.optionURIPATH) | (len(uris[i]) << 0))
+            else:
+                self.coapRequest.append(0 | (len(uris[i]) << 0))
+            for j in range (len(uris[i])):
+                self.coapRequest.append(ord(uris[i][j]))  
+        self.coapRequest.append(0x11) # (12-11  >>> codigo content format - codigo uri path)
+        self.coapRequest.append(coap.octet_stream)    
+        self.coapRequest.append(coap.end)
+        for i in range (len(payload)):
+            self.coapRequest.append(payload[i])
+        print(self.coapRequest)        
+        self.handle_fsm(self.coapRequest) 
+        self.p.adiciona(self)
+        self.p.despache()    
+        return self.response
 
-  
-    
     def do_put(self, url, payload=None):
         pass
     
     def do_delete(self, url, payload=None):
         pass
+
+    
+  
