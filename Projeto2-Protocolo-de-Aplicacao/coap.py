@@ -1,3 +1,7 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*- 
+__author__ = "Paulo Sell e Maria Fernanda Tutui"
+
 from coapc import coap
 from response import Response
 from poller import Poller, Callback
@@ -6,8 +10,11 @@ import sys,time
 import random
 
 class CoAPP(Callback):
-    idle    = 0
-    active  = 1
+    '''
+        Classe responsável por utilizar os métodos da classe coap e implementar o protocolo
+        de aplicação (registro da placa no servidor e troca de dados dos sensores)
+    '''
+
     def __init__(self):
         self.p = Poller()
         self.fd = None
@@ -17,13 +24,16 @@ class CoAPP(Callback):
         self.disable_timeout()
         self.sensores = None
         self.placa = None
-        self.state = CoAPP.idle
+    
         
     
     def handle(self):
         pass
     
     def handle_timeout(self):
+        '''
+            Método para transmitir os dados de sensores a cada timeout
+        '''
         msg = sensorapp_pb2.Mensagem()
         msg.placa = self.placa
         print(msg.placa)
@@ -47,6 +57,15 @@ class CoAPP(Callback):
             return False
     
     def configura(self, placa, periodo, *sensores):
+        '''
+            Método que faz o registro da placa no servidor
+            Recebe como parâmetros:
+            placa: string representando o nome da unidade de aquisição de dados
+            periodo: inteiro com o intervalo de tempo de retransmissão desejado pelo usuário
+            *sensores: listra de string com os nomes dos sensores que irão ser utilizados
+
+            Retorna True se a requisição for bem sucedida. Retorna False caso haja erro na configuração
+        '''
         self.sensores = sensores
         self.placa = placa
         msg = sensorapp_pb2.Mensagem()
@@ -67,6 +86,10 @@ class CoAPP(Callback):
         return True
 
     def start(self):
+        '''
+            Método que inicia a troca de mensagens com os dados de sensores. Faz o primeiro envio
+            e após deixa a retransmissão a cargo da classe Poller
+        '''
         msg = sensorapp_pb2.Mensagem()
         msg.placa = self.placa
         print(msg.placa)

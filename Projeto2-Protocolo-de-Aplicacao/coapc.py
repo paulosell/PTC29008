@@ -1,9 +1,17 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*- 
+__author__ = "Paulo Sell e Maria Fernanda Tutui"
 import socket 
 import poller
 import response
 import random
 
+
 class coap(poller.Callback):
+    '''
+        Classe que implementa o lado cliente do protoco CoAP. A classe é capaz de fazer requisições
+        do tipo GET e POST.
+    '''
     ACK_TIMEOUT              = 2
     ACK_RANDOM_FACTOR        = 1.5
     MAX_RETRANSMIT           = 4
@@ -30,6 +38,9 @@ class coap(poller.Callback):
     
 
     def __init__(self, ip):
+        '''
+            O construtor da classe recebe como parâmetro o ip do servidor (IPv6)
+        '''
         self.retransmitions = 0
         self.p = poller.Poller()
         self.ip = ip
@@ -52,10 +63,17 @@ class coap(poller.Callback):
         self.base_timeout = timeout
 
     def _reloadAndEnableTimeout(self):
+        ''' Altera o valor do timeout do objeto
+        '''
         self.reload_timeout()
         self.enable_timeout()
 
     def handle_fsm(self, frame):
+        '''
+            Método que implementa a máquina de estados do cliente CoAP. Recebe como parametro
+            um bytearray com o quadro a ser transmitido para o servidor ou o quadro recebido 
+            do servidor
+        '''
         if(self.state == coap.idle):
             self.sock.sendto(self.coapRequest, self.servidor)
             self.state = coap.wait
@@ -190,6 +208,10 @@ class coap(poller.Callback):
                       
 
     def sendACK(self, id1, id2):
+        '''
+            Método que envia mensagem de ACK para o servidor. Recebe como parametro
+            dois bytes com o message id
+        '''
         toBeSent = bytearray()
         toBeSent.append((coap.version << 6) | (coap.ACK << 4))
         toBeSent.append(coap.codeEMPTY)
@@ -219,7 +241,12 @@ class coap(poller.Callback):
             self.retransmitions = 0
             self.disable()
     
-    def do_get(self, type, *uris):            
+    def do_get(self, type, *uris): 
+        '''
+            Implementação do método GET.
+            type: tipo da mensagem (CON, ACK ou NON)
+            *uris: string(s) com a(s) uri(s) do recurso
+        '''           
         firstByteID = random.randint(0,255)
         secondByteID = random.randint(0,255)
         token = random.randint(0,255)
@@ -245,6 +272,12 @@ class coap(poller.Callback):
 
 
     def do_post(self, type, payload, *uris):
+        '''
+            Implementação do método POST.
+            type: tipo da mensagem (CON, ACK ou NON)
+            payload: payload da mensagem codificada com o protocol buffers
+            *uris: string(s) com a(s) uri(s) do recurso
+        '''  
         firstByteID = random.randint(0,255)
         secondByteID = random.randint(0,255)
         token = random.randint(0,255)
