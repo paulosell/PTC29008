@@ -1,7 +1,8 @@
 mtype = {CR, CC, CA, data}
 chan canal1 = [1] of {mtype}
 chan canal2 = [1] of {mtype}
- 
+
+int conectados;
 
 active proctype nodo1(){
     int retries = 0;
@@ -40,11 +41,12 @@ printf("Nodo 1 em hand2\n");
 
 
 con:    
-conectado:
+conectados++;
+con2:
     do
-     :: canal2?CR   -> canal1!CC; goto con;
-     :: canal1!data -> goto con;
-     :: canal2?data -> printf("NODO1 RECEBEU DADO\n"); -> goto con;
+     :: canal2?CR   -> canal1!CC; goto con2;
+     :: canal1!data -> goto con2;
+     :: canal2?data -> printf("NODO1 RECEBEU DADO\n"); -> goto con2;
      :: timeout    -> canal1!data;
     od
 
@@ -88,15 +90,15 @@ printf("Nodo 2 em hand2\n");
     od
 
 con:
- 
+conectados++;
+con2:
     do
-     :: canal1?CR   -> canal2!CC; goto con;
-     :: canal2!data -> goto con;
-     :: canal1?data -> printf("NODO2 RECEBEU DADO\n"); -> goto con;
+     :: canal1?CR   -> canal2!CC; goto con2;
+     :: canal2!data -> goto con2;
+     :: canal1?data -> printf("NODO2 RECEBEU DADO\n"); -> goto con2;
      :: timeout    -> canal2!data ;
     od
 
 }
 
-ltl teste { []<>  ((true U nodo1@con)  && (true U nodo2@con))}
-
+ltl conexao { [] <> (conectados == 2) }

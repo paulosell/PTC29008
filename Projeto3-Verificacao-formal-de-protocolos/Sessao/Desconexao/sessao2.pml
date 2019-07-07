@@ -2,15 +2,19 @@ mtype = {DR, DC, data}
 
 chan canal1 = [1] of {mtype}
 chan canal2 = [1] of {mtype}
+int desconectados;
+
 active proctype nodo1(){
     int retries = 0;
-    bool disconected = true;
+    
+
 con:
     do
      :: canal1!DR   -> printf("nodo1 enviou DR e solicitou desconexao\n");           goto half1;
      :: canal2?DR   -> canal1!DR; printf("nodo1 recebeu DR/enviou DR indo para half2\n");      goto half2;
-     :: timeout    -> goto disc;
+     :: timeout     -> goto disc;
     od
+
 
 half1:
     do
@@ -31,8 +35,8 @@ half2:
     od
 
 disc:
- 
-end: printf("nodo1 em disc\n"); 
+desconectados++; 
+printf("nodo1 em disc\n"); 
    
 
 
@@ -40,7 +44,7 @@ end: printf("nodo1 em disc\n");
 
 active proctype nodo2(){
     int retries = 0;
-    bool disconected = true;
+    
 
 con:
     do
@@ -69,10 +73,11 @@ half2:
     od
 
 disc:
+desconectados++;
+printf("nodo2 em disc\n"); 
 
-end: printf("nodo2 em disc\n"); 
     
    
 }
 
-ltl desconexao {  <>  ((true U nodo2@disc) && (true U nodo1@disc)) }
+ltl desconexao { [] <> (desconectados == 2) }
