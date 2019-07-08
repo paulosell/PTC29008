@@ -6,9 +6,11 @@ int desconectados;
 
 active proctype nodo1(){
     int retries = 0;
+    bool desconectado;
     
 
 con:
+desconectado = false;
     do
      :: canal1!DR   -> printf("nodo1 enviou DR e solicitou desconexao\n");           goto half1;
      :: canal2?DR   -> canal1!DR; printf("nodo1 recebeu DR/enviou DR indo para half2\n");      goto half2;
@@ -17,6 +19,7 @@ con:
 
 
 half1:
+desconectado = false;
     do
      :: canal2?DR   -> canal1!DC; printf("nodo1 recebeu DR/enviou DC indo para disc\n");                 goto disc;
      :: timeout    -> 
@@ -27,7 +30,7 @@ half1:
     od
 
 half2:
-
+desconectado = false;
     do
      :: canal2?DR -> canal1!DR; printf("nodo1 recebendo DR e enviando DR\n"); goto half2;
      :: canal2?DC -> printf("nodo1 recebeu DC e foi para disc\n");           goto disc;
@@ -35,7 +38,8 @@ half2:
     od
 
 disc:
-desconectados++; 
+desconectado = true;
+desconectados++;
 printf("nodo1 em disc\n"); 
    
 
@@ -44,9 +48,11 @@ printf("nodo1 em disc\n");
 
 active proctype nodo2(){
     int retries = 0;
+    bool desconectado;
     
 
 con:
+desconectado = false;
     do
      :: canal2!DR   -> printf("nodo2 enviou DR e solicitou desconexao\n");           goto half1;
      :: canal1?DR   -> canal2!DR; printf("nodo2 recebeu DR/enviou DR indo para half2\n");      goto half2;
@@ -54,7 +60,7 @@ con:
     od
 
 half1:
-
+desconectado = false;
     do
      :: canal1?DR   -> canal2!DC; printf("nodo2 recebeu DR/enviou DC indo para disc\n");                 goto disc;
      :: timeout    -> 
@@ -65,7 +71,7 @@ half1:
     od
 
 half2:
-
+desconectado = false;
     do
      :: canal1?DR -> canal2!DR; printf("nodo2 recebendo DR e enviando DR\n"); goto half2;
      :: canal1?DC -> printf("nodo2 recebeu DC e foi para disc\n");           goto disc;
@@ -73,6 +79,7 @@ half2:
     od
 
 disc:
+desconectado = true;
 desconectados++;
 printf("nodo2 em disc\n"); 
 
@@ -80,4 +87,5 @@ printf("nodo2 em disc\n");
    
 }
 
-ltl desconexao { [] <> (desconectados == 2) }
+//ltl desconexao { [] ( <> ( ( nodo1:desconectado == true ) && ( nodo2:desconectado == true ) )    }
+ltl desconexao {  <> (desconectados==2)}
