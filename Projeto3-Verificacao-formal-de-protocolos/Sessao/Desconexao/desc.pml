@@ -21,10 +21,10 @@ con:
     */
 
     do
-     :: canal1!DR   -> goto half1;  // Caso o nodo solicite a desconexao,
-                                    // ele vai para o estado "half1" 
-     :: canal2?DR   -> canal1!DR; goto half2; // Caso o nodo receba solicitação de desconexão,
-                                              // ele vai para o estado "half2"
+     :: canal1!DR   -> goto half1;              // Caso o nodo solicite a desconexao,
+                                                // ele vai para o estado "half1" 
+     :: canal2?DR   -> canal1!DR; goto half2;   // Caso o nodo receba solicitação de desconexão,
+                                                // ele vai para o estado "half2"
      :: timeout     -> goto disc;
     od
 
