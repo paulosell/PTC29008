@@ -23,7 +23,7 @@ envia:
      :: true ->             // Enquanto a variavel 'i' seja menor que 10, o processo
          serial!flag;       // TX pode enviar quadros completos ou quadros com erros
          serial!comum;      // e quando a variável 'i' chegar em 10, o processo de 
-         serial!comum;      // enquadramento deve sinronizar e se manter desta forma
+         serial!comum;      // enquadramento deve sincronizar e se manter desta forma
          serial!comum;
          serial!comum;
          serial!flag;

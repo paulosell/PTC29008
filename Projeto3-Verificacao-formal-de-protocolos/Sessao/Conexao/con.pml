@@ -61,6 +61,7 @@ con:
         Estado de conexão. A variável indica que um dos nodos está conectado
     */
 conectados++;
+
 con2:
     do
      :: canal2?CR   -> canal1!CC; goto con2;
@@ -92,8 +93,8 @@ hand1:
      :: canal1?CA -> goto con;  
      :: timeout   -> 
         if
-         :: (retries < 4) -> canal2!CR; retries = retries + 1; goto hand1;
-         :: else          -> retries = 0;goto disc;
+         :: (retries < 5) -> canal2!CR; retries = retries + 1; goto hand1;
+         :: else          -> retries = 0; goto disc;
         fi
     od
 
@@ -108,13 +109,14 @@ hand2:
 
 con:
 conectados++;
+
 con2:
     do
      :: canal1?CR   -> canal2!CC; goto con2;
      :: canal2!data -> goto con2;
      :: canal1?data -> goto con2;
      :: timeout     -> canal2!data ;
-    od
+    od 
 
 }
 
