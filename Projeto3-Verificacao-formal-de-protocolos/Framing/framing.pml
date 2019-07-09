@@ -3,6 +3,7 @@ chan serial = [1] of {mtype}
  
 active proctype TX() {
   int bytes
+  int i
  
 
 
@@ -16,23 +17,25 @@ envia:
          serial!comum;
          serial!flag;
          goto envia;
-     :: true -> 
+     :: (i < 3) -> 
          serial!flag;
          serial!esc;
          serial!comum;
          serial!comum;
          serial!comum;
-         serial!comum;         
+         serial!comum;
+         serial!comum; 
+         i++;        
          goto envia;       
-     :: true -> 
+      :: (i < 3) -> 
          serial!flag;
-         serial!esc;
          serial!comum;
          serial!comum;
          serial!comum;
          serial!comum;         
          serial!comum;
-         serial!flag;       
+         serial!flag;   
+         i++;    
          goto envia;  
     od
 
@@ -79,6 +82,6 @@ quadro = false;
     od
 }
 
-ltl quadro_completo {  []<> (RX:quadro == true) }
+ltl quadro_completo { [] <> (RX:quadro == true) }
 
 
