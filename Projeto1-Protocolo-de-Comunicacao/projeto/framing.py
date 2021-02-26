@@ -130,7 +130,7 @@ class Framing(layer.Layer):
             self._datasize = self._datasize+1
 
     def _esc(self, byte):
-        ''' Trata o byte quando a máquina de estados está no estado rx
+        ''' Trata o byte quando a máquina de estados está no estado esc
             byte: byte recebido pela interface serial
         '''
         if(byte == b'~' or byte == b'}'):
